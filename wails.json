@@ -1,0 +1,20 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "DataseAI",
+  "outputfilename": "DataseAI",
+  "frontend:install": "",
+  "frontend:build": "",
+  "frontend:dir": "frontend/loading",
+  "reloadDirectories": "",
+  "devServer": "localhost:34115",
+  "appID": "ai.datase.gui",
+  "info": {
+    "companyName": "DataseAI",
+    "productName": "DataseAI",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright 2026 DataseAI",
+    "comments": "Database management GUI"
+  },
+  "nsisType": "multiple",
+  "obfuscated": false
+}
