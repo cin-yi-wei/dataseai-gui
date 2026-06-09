@@ -8,6 +8,8 @@ import (
 	"log"
 
 	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/menu"
+	"github.com/wailsapp/wails/v2/pkg/menu/keys"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
@@ -25,6 +27,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	appMenu := buildMenu()
+
 	err = wails.Run(&options.App{
 		Title:            "DataseAI",
 		Width:            1280,
@@ -34,6 +38,7 @@ func main() {
 		DisableResize:    false,
 		Fullscreen:       false,
 		WindowStartState: options.Normal,
+		Menu:             appMenu,
 		AssetServer: &assetserver.Options{
 			Assets: loading,
 		},
@@ -57,11 +62,35 @@ func main() {
 			WindowIsTranslucent:  false,
 			About: &mac.AboutInfo{
 				Title:   "DataseAI",
-				Message: "Database management GUI",
+				Message: "Database management GUI\nhttps://dataseai.conray.top",
 			},
 		},
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func buildMenu() *menu.Menu {
+	m := menu.NewMenu()
+
+	// App menu (macOS only — first menu becomes the app menu)
+	app := m.AddSubmenu("DataseAI")
+	app.AddText("About DataseAI", nil, func(_ *menu.CallbackData) {})
+	app.AddSeparator()
+	app.AddText("Quit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
+		// runtime.Quit not available here without ctx; Wails handles Cmd+Q natively
+	})
+
+	// Edit menu — enables Cmd+C/V/X/A/Z in the webview
+	edit := m.AddSubmenu("Edit")
+	edit.AddText("Undo", keys.CmdOrCtrl("z"), func(_ *menu.CallbackData) {})
+	edit.AddText("Redo", keys.Combo("z", keys.CmdOrCtrlKey, keys.ShiftKey), func(_ *menu.CallbackData) {})
+	edit.AddSeparator()
+	edit.AddText("Cut", keys.CmdOrCtrl("x"), func(_ *menu.CallbackData) {})
+	edit.AddText("Copy", keys.CmdOrCtrl("c"), func(_ *menu.CallbackData) {})
+	edit.AddText("Paste", keys.CmdOrCtrl("v"), func(_ *menu.CallbackData) {})
+	edit.AddText("Select All", keys.CmdOrCtrl("a"), func(_ *menu.CallbackData) {})
+
+	return m
 }
