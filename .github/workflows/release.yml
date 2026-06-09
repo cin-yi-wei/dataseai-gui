@@ -19,10 +19,6 @@ jobs:
             platform: darwin/arm64
             goos: darwin
             goarch: arm64
-          - os: macos-13
-            platform: darwin/amd64
-            goos: darwin
-            goarch: amd64
           - os: ubuntu-22.04
             platform: linux/amd64
             goos: linux
