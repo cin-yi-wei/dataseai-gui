@@ -1,0 +1,92 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:   # 手動觸發，方便測試
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            platform: darwin/arm64
+            goos: darwin
+            goarch: arm64
+          - os: macos-13
+            platform: darwin/amd64
+            goos: darwin
+            goarch: amd64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # 兩個 repo 並排放：dataseai-gui/ 和 mysqlweb/
+      # go.mod replace 指令用的是 ../mysqlweb
+      - uses: actions/checkout@v4
+        with:
+          path: dataseai-gui
+
+      - uses: actions/checkout@v4
+        with:
+          repository: cin-yi-wei/dataseai
+          path: mysqlweb
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: dataseai-gui/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: mysqlweb/web/package-lock.json
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
+
+      - name: Build frontend
+        working-directory: mysqlweb/web
+        run: npm ci && npm run build
+
+      - name: Build GUI
+        working-directory: dataseai-gui
+        run: wails build -platform ${{ matrix.platform }}
+
+      - name: Package
+        shell: bash
+        run: |
+          VER="${{ github.ref_name }}"
+          [ -z "$VER" ] && VER="dev-$(git -C dataseai-gui rev-parse --short HEAD)"
+          VER="${VER#v}"
+          NAME="DataseAI_${VER}_${{ matrix.goos }}_${{ matrix.goarch }}"
+          mkdir -p "$NAME"
+          APP=$(find dataseai-gui/build/bin -maxdepth 1 -name "*.app" -type d | head -1)
+          if [ -n "$APP" ]; then
+            codesign --force --deep --sign - "$APP"
+            codesign --verify --deep --strict --verbose=2 "$APP"
+            cp -r "$APP" "$NAME/"
+          else
+            echo "ERROR: .app not found"; ls dataseai-gui/build/bin/ || true; exit 1
+          fi
+          tar czf "${NAME}.tar.gz" "$NAME"
+          echo "ASSET=${NAME}.tar.gz" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ASSET }}
+          path: ${{ env.ASSET }}
+
+      - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET }}
