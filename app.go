@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"io/fs"
 	"log"
 	"net"
@@ -75,6 +76,37 @@ func (a *App) withOpenExternal(next http.Handler) http.Handler {
 				return
 			}
 			wailsruntime.BrowserOpenURL(a.ctx, body.URL)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		if r.URL.Path == "/__wails/save" && r.Method == http.MethodPost {
+			name := r.URL.Query().Get("name")
+			if name == "" {
+				name = "download.dat"
+			}
+			data, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, "read body: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+			path, err := wailsruntime.SaveFileDialog(a.ctx, wailsruntime.SaveDialogOptions{
+				DefaultFilename: name,
+				Title:           "Save file",
+			})
+			if err != nil {
+				http.Error(w, "save dialog: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if path == "" {
+				// user cancelled — still treat as handled so the frontend
+				// doesn't fall back to the (broken-in-webview) anchor click.
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			if err := os.WriteFile(path, data, 0o644); err != nil {
+				http.Error(w, "write file: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
