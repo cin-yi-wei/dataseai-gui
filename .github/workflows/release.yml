@@ -32,8 +32,8 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      # 兩個 repo 並排放：dataseai-gui/ 和 mysqlweb/
-      # go.mod replace 指令用的是 ../mysqlweb
+      # 兩個 repo 並排放：dataseai-gui/ 和 dataseai/
+      # go.mod replace 指令用的是 ../dataseai
       - uses: actions/checkout@v4
         with:
           path: dataseai-gui
@@ -42,7 +42,7 @@ jobs:
         with:
           repository: cin-yi-wei/dataseai
           ref: main
-          path: mysqlweb
+          path: dataseai
 
       - name: Compute version
         id: ver
@@ -65,7 +65,7 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-          cache-dependency-path: mysqlweb/web/package-lock.json
+          cache-dependency-path: dataseai/web/package-lock.json
 
       - name: Install Linux deps
         if: matrix.goos == 'linux'
@@ -80,7 +80,7 @@ jobs:
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
 
       - name: Build frontend
-        working-directory: mysqlweb/web
+        working-directory: dataseai/web
         run: npm ci && npm run build
 
       - name: Build GUI
