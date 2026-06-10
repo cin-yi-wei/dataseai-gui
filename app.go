@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io/fs"
 	"log"
 	"net"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	dataseai "github.com/conray/dataseai"
+	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type App struct {
@@ -54,12 +56,30 @@ func (a *App) startup(ctx context.Context) {
 	a.port = ln.Addr().(*net.TCPAddr).Port
 	log.Printf("dataseai-gui on :%d (data: %s)", a.port, dataDir)
 
-	a.srv = &http.Server{Handler: a.dsServ.Handler()}
+	a.srv = &http.Server{Handler: a.withOpenExternal(a.dsServ.Handler())}
 	go func() {
 		if err := a.srv.Serve(ln); err != nil && err != http.ErrServerClosed {
 			log.Printf("server: %v", err)
 		}
 	}()
+}
+
+func (a *App) withOpenExternal(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/__wails/open" && r.Method == http.MethodPost {
+			var body struct {
+				URL string `json:"url"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.URL == "" {
+				http.Error(w, "bad request", http.StatusBadRequest)
+				return
+			}
+			wailsruntime.BrowserOpenURL(a.ctx, body.URL)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (a *App) shutdown(ctx context.Context) {
