@@ -45,7 +45,7 @@ func main() {
 		OnStartup: app.startup,
 		OnDomReady: func(ctx context.Context) {
 			runtime.WindowExecJS(ctx, fmt.Sprintf(
-				`window.location.replace("http://localhost:%d")`, app.port,
+				`if (window.location.host !== "localhost:%d") { window.location.replace("http://localhost:%d"); }`, app.port, app.port,
 			))
 		},
 		OnShutdown: app.shutdown,
