@@ -39,10 +39,10 @@ func main() {
 
 	err = wails.Run(&options.App{
 		Title:            "DataseAI",
-		Width:            1280,
-		Height:           800,
-		MinWidth:         900,
-		MinHeight:        600,
+		Width:            1100,
+		Height:           680,
+		MinWidth:         760,
+		MinHeight:        520,
 		DisableResize:    false,
 		Fullscreen:       false,
 		WindowStartState: options.Normal,
