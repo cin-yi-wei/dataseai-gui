@@ -1,10 +1,10 @@
 .PHONY: build build-mac build-win build-linux dev setup setup-linux clean
 
-MYSQLWEB := ../mysqlweb
+DATASEAI := ../dataseai
 
-# 確保 mysqlweb 前端已 build（embed 需要 web/dist）
+# 確保 dataseai 前端已 build（embed 需要 web/dist）
 frontend:
-	cd $(MYSQLWEB)/web && npm ci && npm run build
+	cd $(DATASEAI)/web && npm ci && npm run build
 
 # 當前平台
 build: frontend
