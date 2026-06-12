@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	goruntime "runtime"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/menu"
@@ -27,7 +28,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	appMenu := buildMenu()
+	// The native menu is only used on macOS (it provides the app menu and
+	// enables clipboard shortcuts). On Windows/Linux it renders as a light
+	// Win32 menu bar that ignores the dark theme, so skip it there — WebView2
+	// already handles Ctrl+C/V/X/Z/A natively.
+	var appMenu *menu.Menu
+	if goruntime.GOOS == "darwin" {
+		appMenu = buildMenu()
+	}
 
 	err = wails.Run(&options.App{
 		Title:            "DataseAI",
