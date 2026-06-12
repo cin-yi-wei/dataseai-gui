@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/fs"
 	"log"
@@ -23,6 +24,8 @@ type App struct {
 	srv    *http.Server
 	dsServ *dataseai.Server
 }
+
+const preferredPort = 1456
 
 func NewApp() *App { return &App{} }
 
@@ -50,7 +53,7 @@ func (a *App) startup(ctx context.Context) {
 		log.Fatalf("server init: %v", err)
 	}
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := listenLocal(preferredPort)
 	if err != nil {
 		log.Fatalf("listen: %v", err)
 	}
@@ -63,6 +66,15 @@ func (a *App) startup(ctx context.Context) {
 			log.Printf("server: %v", err)
 		}
 	}()
+}
+
+func listenLocal(preferred int) (net.Listener, error) {
+	ln, err := net.Listen("tcp", net.JoinHostPort("127.0.0.1", fmt.Sprint(preferred)))
+	if err == nil {
+		return ln, nil
+	}
+	log.Printf("preferred port %d unavailable: %v; falling back to a random port", preferred, err)
+	return net.Listen("tcp", "127.0.0.1:0")
 }
 
 func (a *App) withOpenExternal(next http.Handler) http.Handler {
