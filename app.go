@@ -47,7 +47,10 @@ func (a *App) startup(ctx context.Context) {
 		KeyPath:      filepath.Join(dataDir, "master.key"),
 		Version:      "gui-1.0.0",
 		Registration: "open",
-		WebFS:        webSub,
+		// 桌面單機版：啟用自助重設，但不設 Mail*，
+		// 所以 Mailer 為 nil，走「無條件重設」不寄 email。
+		ForgotPassword: true,
+		WebFS:          webSub,
 	})
 	if err != nil {
 		log.Fatalf("server init: %v", err)
